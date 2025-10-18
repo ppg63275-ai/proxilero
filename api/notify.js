@@ -43,14 +43,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ ok: false, error: "Invalid API key" });
   }
 
-  let body = {};
-  try {
-    const raw = await req.text();
-    body = JSON.parse(raw || "{}");
-  } catch {
-    return res.status(400).json({ ok: false, error: "Failed to parse request body" });
-  }
-
+const body = req.body || {}
   const displayName = sanitizeString(body.displayName);
   const genRaw = sanitizeString(body.genRaw);
   const genVal = Number(body.genVal);
