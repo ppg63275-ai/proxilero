@@ -8,11 +8,11 @@ const WEBHOOK_100MPLUS = process.env.DISCORD_WEBHOOK_100MPLUS || ""
 
 const REQUIRED_WEBHOOKS = [WEBHOOK_1TO10M, WEBHOOK_10TO50M, WEBHOOK_50TO100M, WEBHOOK_100MPLUS]
 
-if (!API_KEY || REQUIRED_WEBHOOKS.some((w) => !w)) {
+if (!API_KEY || REQUIRED_WEBHOOKS.some(w => !w)) {
   throw new Error("Missing required environment variables")
 }
 
-function allowedWebhookForVal(val: number): string | null {
+function allowedWebhookForVal(val) {
   if (val >= 1e8) return WEBHOOK_100MPLUS
   if (val >= 5e7) return WEBHOOK_50TO100M
   if (val >= 1e7) return WEBHOOK_10TO50M
@@ -20,13 +20,13 @@ function allowedWebhookForVal(val: number): string | null {
   return null
 }
 
-function sanitizeString(s: unknown): string {
+function sanitizeString(s) {
   if (s === null || s === undefined) return ""
   const str = String(s).replace(/\r?\n/g, " ").trim()
   return str.length > 200 ? str.slice(0, 197) + "..." : str
 }
 
-function isValidUrl(url: string): boolean {
+function isValidUrl(url) {
   try {
     new URL(url)
     return true
@@ -35,7 +35,7 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method not allowed" })
   }
@@ -45,7 +45,7 @@ export default async function handler(req: any, res: any) {
     return res.status(401).json({ ok: false, error: "Invalid API key" })
   }
 
-  let body: Record<string, unknown> = {}
+  let body = {}
   try {
     body = req.body || {}
     if (typeof body !== "object" || Array.isArray(body)) {
@@ -62,29 +62,13 @@ export default async function handler(req: any, res: any) {
   const jobId = sanitizeString(body.jobId)
   const mentionRole = sanitizeString(body.mentionRole || "")
 
-  if (!displayName) {
-    return res.status(400).json({ ok: false, error: "Missing displayName" })
-  }
-  if (!genRaw) {
-    return res.status(400).json({ ok: false, error: "Missing genRaw" })
-  }
-  if (!Number.isFinite(genVal) || genVal <= 0) {
-    return res.status(400).json({ ok: false, error: "Invalid genVal" })
-  }
-  if (!placeId) {
-    return res.status(400).json({ ok: false, error: "Missing placeId" })
-  }
-  if (!jobId) {
-    return res.status(400).json({ ok: false, error: "Missing jobId" })
+  if (!displayName || !genRaw || !placeId || !jobId || !Number.isFinite(genVal) || genVal <= 0) {
+    return res.status(400).json({ ok: false, error: "Missing or invalid fields" })
   }
 
   const webhookUrl = allowedWebhookForVal(genVal)
-  if (!webhookUrl) {
-    return res.status(400).json({ ok: false, error: "No target webhook for genVal" })
-  }
-
-  if (!isValidUrl(webhookUrl)) {
-    return res.status(500).json({ ok: false, error: "Invalid webhook URL" })
+  if (!webhookUrl || !isValidUrl(webhookUrl)) {
+    return res.status(400).json({ ok: false, error: "Invalid webhook URL or genVal" })
   }
 
   const embed = {
@@ -122,27 +106,17 @@ export default async function handler(req: any, res: any) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(discordBody),
-      signal: controller.signal as any,
+      signal: controller.signal,
     })
 
     clearTimeout(timeout)
 
     if (!response.ok) {
-      let errorBody = ""
-      try {
-        errorBody = await response.text()
-      } catch {
-        errorBody = "Unable to read response"
-      }
-      return res.status(502).json({
-        ok: false,
-        error: "Discord API error",
-        status: response.status,
-      })
+      return res.status(502).json({ ok: false, error: "Discord API error", status: response.status })
     }
 
     return res.status(200).json({ ok: true })
-  } catch (err: any) {
+  } catch (err) {
     if (err.name === "AbortError") {
       return res.status(504).json({ ok: false, error: "Request timeout" })
     }
