@@ -1,9 +1,14 @@
-const sentCache = new Set();
+import { Redis } from "@upstash/redis";
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
 
 function parseAmount(value, realAmount) {
   if (typeof value === "number") return value;
   if (typeof value === "string") {
-    let s = value.replace(/,/g, "").trim();
+    const s = value.replace(/,/g, "").trim();
     if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
     const m = s.match(/^(-?\d+(\.\d+)?)([KMBTkmBt])$/);
     if (m) {
@@ -36,8 +41,16 @@ export default async function handler(req, res) {
 
   try {
     const b = req.body;
-    if (sentCache.has(b.id)) return res.status(200).json({ skipped: true });
-    sentCache.add(b.id);
+    if (!b?.id) return res.status(400).json({ error: "Missing id" });
+
+    const cached = await redis.get(b.id);
+    if (cached) return res.status(200).json({ skipped: true });
+
+    await redis.set(b.id, "1", { ex: 60 });
+
+    const amountNum = parseAmount(b.amount, b.realAmount);
+    if (amountNum < 1_000_000)
+      return res.status(200).json({ skipped: true, reason: "below 1m" });
 
     const Webhooks = {
       "1m-10m": {
@@ -58,11 +71,6 @@ export default async function handler(req, res) {
       },
     };
 
-    const amountNum = parseAmount(b.amount, b.realAmount);
-
-    if (amountNum < 1_000_000)
-      return res.status(200).json({ skipped: true, reason: "below 1m" });
-
     const range =
       amountNum < 10_000_000
         ? "1m-10m"
@@ -77,7 +85,7 @@ export default async function handler(req, res) {
 
     const joinLink =
       !b.placeId || !b.jobId
-        ? "https://customscriptwow.vercel.app/qpi/joiner"
+        ? "https://customscriptwow.vercel.app/api/joiner"
         : `https://customscriptwow.vercel.app/api/joiner?placeId=${b.placeId}&gameInstanceId=${b.jobId}`;
 
     const moneyDisplay =
@@ -99,12 +107,7 @@ export default async function handler(req, res) {
         { name: "🔗 Join Link", value: `[Click to Join](${joinLink})`, inline: false },
         {
           name: "💻 Join Script (PC)",
-          value:
-            "```lua\ngame:GetService(\"TeleportService\"):TeleportToPlaceInstance(" +
-            b.placeId +
-            ', "' +
-            b.jobId +
-            '", game.Players.LocalPlayer)\n```',
+          value: `\`\`\`lua\ngame:GetService("TeleportService"):TeleportToPlaceInstance(${b.placeId}, "${b.jobId}", game.Players.LocalPlayer)\n\`\`\``,
           inline: false,
         },
       ],
@@ -121,8 +124,9 @@ export default async function handler(req, res) {
       body: JSON.stringify({ content: entry.role, embeds: [embed] }),
     });
 
-    res.status(200).json({ success: true });
-  } catch {
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
