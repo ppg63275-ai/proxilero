@@ -59,6 +59,10 @@ export default async function handler(req, res) {
     };
 
     const amountNum = parseAmount(b.amount, b.realAmount);
+
+    if (amountNum < 1_000_000)
+      return res.status(200).json({ skipped: true, reason: "below 1m" });
+
     const range =
       amountNum < 10_000_000
         ? "1m-10m"
@@ -73,8 +77,8 @@ export default async function handler(req, res) {
 
     const joinLink =
       !b.placeId || !b.jobId
-        ? "https://customscriptwow.vercel.app/joiner"
-        : `https://customscriptwow.vercel.app/joiner?placeId=${b.placeId}&gameInstanceId=${b.jobId}`;
+        ? "https://customscriptwow.vercel.app/qpi/joiner"
+        : `https://customscriptwow.vercel.app/api/joiner?placeId=${b.placeId}&gameInstanceId=${b.jobId}`;
 
     const moneyDisplay =
       b.realAmount && String(b.realAmount).trim() !== ""
