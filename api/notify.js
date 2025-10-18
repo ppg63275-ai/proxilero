@@ -85,8 +85,8 @@ export default async function handler(req, res) {
 
     const joinLink =
       !b.placeId || !b.jobId
-        ? "https://customscriptwow.vercel.app/api/joiner"
-        : `https://customscriptwow.vercel.app/api/joiner?placeId=${b.placeId}&gameInstanceId=${b.jobId}`;
+        ? "https://customscriptwow.vercel.app/api/joiner.html"
+        : `https://customscriptwow.vercel.app/api/joiner.html?placeId=${b.placeId}&gameInstanceId=${b.jobId}`;
 
     const moneyDisplay =
       b.realAmount && String(b.realAmount).trim() !== ""
