@@ -1,5 +1,3 @@
-import fetch from "node-fetch"
-
 const API_KEY = process.env.NOTIFY_API_KEY || ""
 const WEBHOOK_1TO10M = process.env.DISCORD_WEBHOOK_1TO10M || ""
 const WEBHOOK_10TO50M = process.env.DISCORD_WEBHOOK_10TO50M || ""
