@@ -96,8 +96,8 @@ export default async function handler(req, res) {
         : String(b.amount);
 
     const embed = {
-      title: "Hamburger Wings Notifier",
-      color: 65280,
+      title: "Nova Notifier",
+      color: 8388736,
       fields: [
         { name: "🏷️ Name", value: b.name || "Unknown", inline: true },
         { name: "💰 Money per sec", value: moneyDisplay, inline: true },
