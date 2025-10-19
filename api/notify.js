@@ -103,7 +103,7 @@ export default async function handler(req, res) {
       ],
       footer: {
         text:
-          "modified by sigma paster xynnn • " +
+          "Made by Hikaru and Xynnn 至 • " +
           new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" }),
       },
     };
