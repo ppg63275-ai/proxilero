@@ -111,9 +111,9 @@ export default async function handler(req, res) {
           inline: false,
         },
       ],
-      footer: {
-  text: "modified by sigma paster xynnn • " + 
-        new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+     footer: {
+  text: "modified by sigma paster xynnn • " +
+        new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" }),
       },
     };
 
