@@ -1,10 +1,3 @@
-import { Redis } from "@upstash/redis";
-
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-});
-
 function parseAmount(value, realAmount) {
   if (typeof value === "number") return value;
   if (typeof value === "string") {
@@ -43,10 +36,7 @@ export default async function handler(req, res) {
     const b = req.body;
     if (!b?.id) return res.status(400).json({ error: "Missing id" });
 
-    const cached = await redis.get(b.id);
-    if (cached) return res.status(200).json({ skipped: true });
-
-    await redis.set(b.id, "1", { ex: 60 });
+    // Redis logic removed
 
     const amountNum = parseAmount(b.amount, b.realAmount);
     if (amountNum < 1_000_000)
@@ -111,9 +101,10 @@ export default async function handler(req, res) {
           inline: false,
         },
       ],
-     footer: {
-  text: "modified by sigma paster xynnn • " +
-        new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" }),
+      footer: {
+        text:
+          "modified by sigma paster xynnn • " +
+          new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Berlin" }),
       },
     };
 
